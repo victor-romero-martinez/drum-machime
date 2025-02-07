@@ -13,62 +13,55 @@ export default function PadBank() {
   const dispatch = useDispatch<AppDispatch>();
 
   const audioRefs = useRef<(HTMLAudioElement | null)[]>([]);
-  const keyListener = useRef<HTMLDivElement | null>(null);
 
   const currentDrum = switchDrum ? "drum1" : "drum0";
 
   const handlePlay = (idx: number) => {
     if (isOff) return;
 
-    audioRefs.current[idx]!.volume = value;
-    audioRefs.current[idx]?.play();
-    dispatch(setName(parseAudioName(SOUND_SRC.drum1[idx])));
-  };
-
-  // event listener for keyup
-  const handleKey = (e: KeyboardEvent) => {
-    const key = e.key.toLocaleUpperCase();
-    const idxElement = KEYBOARD_KEY.findIndex((k) => k === key);
-
-    if (idxElement >= 0) {
-      handlePlay(idxElement);
+    const audio = audioRefs.current[idx];
+    if (audio) {
+      // Check if the audio ref exists
+      audio.volume = value;
+      audio.play();
+      dispatch(setName(parseAudioName(SOUND_SRC[currentDrum][idx])));
     }
   };
 
-  // key event
   useEffect(() => {
-    if (keyListener.current) {
-      keyListener.current, addEventListener("keyup", handleKey);
-    }
+    const handleKey = (e: KeyboardEvent) => {
+      const key = e.key.toLocaleUpperCase();
+      const idxElement = KEYBOARD_KEY.findIndex((k) => k === key);
 
-    return () => {
-      if (keyListener.current) {
-        keyListener.current.removeEventListener("keyup", handleKey);
+      if (idxElement >= 0) {
+        handlePlay(idxElement);
       }
     };
-  }, [value]);
+
+    window.addEventListener("keyup", handleKey);
+
+    return () => window.removeEventListener("keyup", handleKey);
+  }, [isOff, value, switchDrum]); // Add dependencies!
 
   return (
-    <>
-      <div className="pad-bank" ref={keyListener} tabIndex={0}>
-        {KEYBOARD_KEY.map((k, i) => (
-          <div
-            key={i}
-            className="drum-pad"
-            id={parseAudioName(SOUND_SRC[currentDrum][i])}
-            onClick={() => handlePlay(i)}
-          >
-            <audio
-              id={k}
-              className="clip"
-              autoPlay={false}
-              ref={(audio) => (audioRefs.current[i] = audio)}
-              src={SOUND_SRC[currentDrum][i]}
-            ></audio>
-            {k}
-          </div>
-        ))}
-      </div>
-    </>
+    <div className="pad-bank">
+      {KEYBOARD_KEY.map((k, i) => (
+        <div
+          key={i}
+          className="drum-pad"
+          id={parseAudioName(SOUND_SRC[currentDrum][i])}
+          onClick={() => handlePlay(i)}
+        >
+          <audio
+            id={k}
+            className="clip"
+            autoPlay={false}
+            ref={(audio) => (audioRefs.current[i] = audio)}
+            src={SOUND_SRC[currentDrum][i]}
+          />
+          {k}
+        </div>
+      ))}
+    </div>
   );
 }
